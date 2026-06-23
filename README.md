@@ -65,6 +65,10 @@ and runs full-screen like a normal app, no app store required. You just need the
 app running somewhere your phone can reach over **HTTPS** (any host works;
 install prompts require HTTPS, except on `localhost` during development).
 
+> **Not sure how to get it online?** Follow **[DEPLOY.md](./DEPLOY.md)** — a
+> click-by-click guide to deploying free on Render and installing it on your
+> phone (~10 minutes, $0).
+
 **Android (Chrome):**
 1. Open the app's URL in Chrome.
 2. Tap the **⋮** menu → **Install app** (or **Add to Home screen**).

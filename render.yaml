@@ -1,0 +1,37 @@
+# Render Blueprint — one-click deploy config.
+# In Render: New + -> Blueprint -> connect this repo. Render reads this file,
+# creates the web service, builds it, and asks you to fill in the secret
+# values (the eBay keys, and optionally the Anthropic key).
+#
+# Docs / step-by-step: see DEPLOY.md
+services:
+  - type: web
+    name: phone-deal-scanner
+    runtime: node
+    plan: free # free tier; see DEPLOY.md for the persistent-storage upgrade
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Where the SQLite file lives. On the free plan this is ephemeral
+      # (resets on restart). To keep your watchlist permanently, add a disk
+      # mounted at /var/data and change this to /var/data/scanner.db
+      # (requires a paid instance — see DEPLOY.md).
+      - key: DATABASE_PATH
+        value: ./data/scanner.db
+      # --- secrets: Render will prompt you to enter these on deploy ---
+      - key: EBAY_CLIENT_ID
+        sync: false
+      - key: EBAY_CLIENT_SECRET
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # --- non-secret defaults ---
+      - key: EBAY_ENV
+        value: production
+      - key: EBAY_MARKETPLACE_ID
+        value: EBAY_US
+      - key: ANTHROPIC_MODEL
+        value: claude-opus-4-8
