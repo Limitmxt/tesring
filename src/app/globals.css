@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-neutral-950 text-neutral-100 antialiased;
+}
+
+/* Inputs share a compact dark style across the app. */
+.field {
+  @apply w-full rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1.5
+    text-sm text-neutral-100 placeholder-neutral-500 outline-none
+    focus:border-neutral-400;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center gap-1 rounded-md px-3 py-1.5
+    text-sm font-medium transition-colors disabled:opacity-50;
+}
+
+.btn-primary {
+  @apply btn bg-emerald-600 text-white hover:bg-emerald-500;
+}
+
+.btn-ghost {
+  @apply btn border border-neutral-700 text-neutral-200 hover:bg-neutral-800;
+}
+
+.label {
+  @apply mb-1 block text-xs font-medium uppercase tracking-wide text-neutral-400;
+}
