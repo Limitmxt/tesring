@@ -1,10 +1,26 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import PwaRegister from "@/components/PwaRegister";
 import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Phone Deal Scanner",
   description: "Find profitable phones to flip on eBay.",
+  manifest: "/manifest.webmanifest",
+  // iOS uses these for the home-screen icon and full-screen behavior.
+  appleWebApp: {
+    capable: true,
+    title: "Deal Scanner",
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/icon-180.png",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#059669",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -28,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </div>
         </header>
         <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
+        <PwaRegister />
       </body>
     </html>
   );
