@@ -15,6 +15,21 @@ export interface UiListing extends ScoredListing {
   otherCostsInput: number;
   ai?: AiClassification;
   aiLoading?: boolean;
+  // Auto resale estimate ("comps") from active eBay listings.
+  compResale?: number;
+  compSample?: number;
+  compLow?: number;
+  compHigh?: number;
+  compLoading?: boolean;
+}
+
+export interface CompEstimate {
+  key: string;
+  label: string;
+  resale: number;
+  sampleSize: number;
+  low: number;
+  high: number;
 }
 
 export type SortKey =

@@ -187,3 +187,71 @@ export async function searchListings(params: SearchParams): Promise<Listing[]> {
 
   return listings;
 }
+
+// Words that mean a comp is NOT a clean working unit — we drop these so the
+// resale estimate reflects sellable phones, not other damaged/locked listings.
+const COMP_EXCLUDE = [
+  "cracked",
+  "crack",
+  "broken",
+  "shatter",
+  "for parts",
+  "parts only",
+  "icloud lock",
+  "icloud locked",
+  "google lock",
+  "frp",
+  "blacklist",
+  "bad imei",
+  "bad esn",
+  "lot of",
+  "bulk",
+  "scrap",
+  "as-is",
+  "as is",
+  "repair",
+  "faulty",
+  "not working",
+  "won't",
+  "wont",
+  "doesn't",
+  "does not",
+  "water damage",
+  "damaged",
+];
+
+/**
+ * Fetch asking prices of comparable working/used units for a model query.
+ * Used by the resale estimator. Returns the list of item prices (USD).
+ */
+export async function fetchCompPrices(query: string): Promise<number[]> {
+  const token = await getAccessToken();
+
+  const url = new URL(`${API_BASE}/buy/browse/v1/item_summary/search`);
+  url.searchParams.set("q", query);
+  url.searchParams.set("category_ids", CELL_PHONES_CATEGORY);
+  url.searchParams.set("limit", "50");
+  // Used + refurbished, fixed-price (asking prices closest to resale value).
+  url.searchParams.set(
+    "filter",
+    "conditionIds:{2000|2010|2020|2030|2500|3000},buyingOptions:{FIXED_PRICE}",
+  );
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    "X-EBAY-C-MARKETPLACE-ID": MARKETPLACE_ID,
+    "Content-Type": "application/json",
+  };
+
+  const res = await fetch(url.toString(), { headers });
+  if (!res.ok) throw new Error(`eBay comps failed (${res.status})`);
+
+  const data = (await res.json()) as { itemSummaries?: any[] };
+  return (data.itemSummaries ?? [])
+    .filter((it) => {
+      const t = (it.title ?? "").toLowerCase();
+      return !COMP_EXCLUDE.some((w) => t.includes(w));
+    })
+    .map((it) => (it.price?.value ? Number(it.price.value) : 0))
+    .filter((p) => p > 0);
+}

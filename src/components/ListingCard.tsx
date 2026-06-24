@@ -10,6 +10,7 @@ interface Props {
   listing: UiListing;
   onChange: (next: UiListing) => void;
   onClassify: (listing: UiListing) => void;
+  onEstimate: (listing: UiListing) => void;
   onAddToWatchlist: (listing: UiListing, profitValue: number, sellerMsg: string) => void;
 }
 
@@ -17,7 +18,21 @@ function money(n: number): string {
   return `$${n.toFixed(2)}`;
 }
 
-export default function ListingCard({ listing, onChange, onClassify, onAddToWatchlist }: Props) {
+const REPAIR_LABELS: Record<string, string> = {
+  screen: "Screen",
+  battery: "Battery",
+  chargingPort: "Charging port",
+  backGlass: "Back glass",
+  camera: "Camera",
+};
+
+export default function ListingCard({
+  listing,
+  onChange,
+  onClassify,
+  onEstimate,
+  onAddToWatchlist,
+}: Props) {
   const [copied, setCopied] = useState(false);
 
   // Recompute profit live from the editable inputs.
@@ -104,9 +119,19 @@ export default function ListingCard({ listing, onChange, onClassify, onAddToWatc
               className="field"
               type="number"
               value={listing.resalePrice || ""}
-              placeholder="enter resale"
+              placeholder={listing.compResale ? String(listing.compResale) : "auto/enter"}
               onChange={(e) => setNum("resalePrice", e.target.value)}
             />
+            {listing.compLoading ? (
+              <p className="mt-0.5 text-[10px] text-neutral-500">estimating…</p>
+            ) : listing.compResale ? (
+              <p className="mt-0.5 text-[10px] text-emerald-400">
+                auto ~${listing.compResale} · {listing.compSample} comps (${listing.compLow}–$
+                {listing.compHigh})
+              </p>
+            ) : listing.compSample === 0 ? (
+              <p className="mt-0.5 text-[10px] text-neutral-500">no comps — enter manually</p>
+            ) : null}
           </Field>
           <Field label="Repair ($)">
             <input
@@ -115,6 +140,13 @@ export default function ListingCard({ listing, onChange, onClassify, onAddToWatc
               value={listing.repairCostInput}
               onChange={(e) => setNum("repairCostInput", e.target.value)}
             />
+            {listing.signals.repairTypes.length > 0 ? (
+              <p className="mt-0.5 text-[10px] text-neutral-500">
+                auto: {listing.signals.repairTypes.map((t) => REPAIR_LABELS[t]).join(", ")} (${listing.defaultRepairCost})
+              </p>
+            ) : (
+              <p className="mt-0.5 text-[10px] text-neutral-500">no issue detected</p>
+            )}
           </Field>
           <Field label="Shipping ($)">
             <input
@@ -176,6 +208,13 @@ export default function ListingCard({ listing, onChange, onClassify, onAddToWatc
 
       {/* actions */}
       <div className="flex flex-wrap gap-2">
+        <button
+          className="btn-ghost"
+          disabled={listing.compLoading}
+          onClick={() => onEstimate(listing)}
+        >
+          {listing.compLoading ? "Estimating…" : "Estimate resale"}
+        </button>
         <button
           className="btn-ghost"
           disabled={listing.aiLoading}

@@ -155,12 +155,26 @@ percentage of resale (eBay's final value fee). Repair costs default to per-issue
 estimates from settings (screen/battery/charging port/back glass/camera) and are
 fully editable per listing. ROI = profit ÷ total cash out.
 
-### Sold comps
+### Resale estimate (auto) + repair estimate
 
-eBay's Browse API does **not** expose sold/completed listings (that needs the
-restricted Marketplace Insights API). So resale value is entered manually for
-now — each card has an editable "Resale est." field. Wiring up real comps is on
-the roadmap below.
+**Resale** is estimated automatically. eBay's Browse API doesn't expose
+sold/completed prices (that needs the restricted Marketplace Insights API), so
+instead the app parses the model + storage from the title (e.g. "iPhone 12
+64GB"), searches **active used/refurbished listings** of that model, filters out
+damaged/locked/lot results, and uses a **trimmed median** of the asking prices
+as the resale value (shown with the sample size and a low–high range). It runs
+on each search (toggle "Auto-estimate resale"), and there's a per-card
+"Estimate resale" button. You can always type your own value to override it.
+See `src/lib/comps.ts` and `src/app/api/comps`.
+
+**Repair cost** is also estimated automatically: the scoring engine detects the
+repair issue(s) in the title (screen / battery / charging port / back glass /
+camera) and sums the matching per-issue defaults from settings. The basis is
+shown under the repair field, and it's editable per listing.
+
+With both filled in, **profit and ROI compute themselves** — no manual entry
+required. (Resale is an estimate from active listings, not true sold comps;
+treat it as a guide and sanity-check before buying.)
 
 ---
 

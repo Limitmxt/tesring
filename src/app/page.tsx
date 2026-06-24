@@ -6,7 +6,7 @@ import ListingCard from "@/components/ListingCard";
 import { estimateProfit } from "@/lib/profit";
 import { DEFAULT_SETTINGS } from "@/lib/defaults";
 import type { SearchParams, Settings } from "@/lib/types";
-import type { CategoryFilter, SortKey, UiListing } from "@/lib/ui-types";
+import type { CategoryFilter, CompEstimate, SortKey, UiListing } from "@/lib/ui-types";
 
 const DEFAULT_PARAMS: SearchParams = {
   keywords: "iPhone cracked screen clean IMEI",
@@ -40,6 +40,7 @@ export default function DashboardPage() {
   const [sort, setSort] = useState<SortKey>("profit");
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [showAvoid, setShowAvoid] = useState(false);
+  const [autoEstimate, setAutoEstimate] = useState(true);
 
   // Load persisted settings (default repair costs / fees) on mount.
   useEffect(() => {
@@ -75,6 +76,7 @@ export default function DashboardPage() {
         otherCostsInput: 0,
       }));
       setListings(mapped);
+      if (autoEstimate) estimateResale(mapped);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Network error.");
     } finally {
@@ -84,6 +86,50 @@ export default function DashboardPage() {
 
   function updateListing(next: UiListing) {
     setListings((prev) => prev.map((l) => (l.id === next.id ? next : l)));
+  }
+
+  function applyEstimates(targets: UiListing[], estimates: (CompEstimate | null)[]) {
+    const byId = new Map<string, CompEstimate | null>();
+    targets.forEach((l, i) => byId.set(l.id, estimates[i] ?? null));
+    setListings((prev) =>
+      prev.map((l) => {
+        if (!byId.has(l.id)) return l;
+        const est = byId.get(l.id);
+        if (!est) return { ...l, compLoading: false, compSample: 0 };
+        return {
+          ...l,
+          compLoading: false,
+          compResale: est.resale,
+          compSample: est.sampleSize,
+          compLow: est.low,
+          compHigh: est.high,
+          // Fill resale only if the user hasn't already typed a value.
+          resalePrice: l.resalePrice > 0 ? l.resalePrice : est.resale,
+        };
+      }),
+    );
+  }
+
+  // Auto-estimate resale value (and therefore profit) for a batch of listings.
+  async function estimateResale(targets: UiListing[]) {
+    if (targets.length === 0) return;
+    const ids = new Set(targets.map((l) => l.id));
+    setListings((prev) => prev.map((l) => (ids.has(l.id) ? { ...l, compLoading: true } : l)));
+    try {
+      const res = await fetch("/api/comps", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ titles: targets.map((l) => l.title) }),
+      });
+      const data = await res.json();
+      applyEstimates(targets, (data.estimates as (CompEstimate | null)[]) ?? []);
+    } catch {
+      setListings((prev) => prev.map((l) => (ids.has(l.id) ? { ...l, compLoading: false } : l)));
+    }
+  }
+
+  function estimateOne(listing: UiListing) {
+    return estimateResale([listing]);
   }
 
   async function classify(listing: UiListing) {
@@ -230,6 +276,17 @@ export default function DashboardPage() {
             />
             Show avoid listings
           </label>
+          <label className="flex items-center gap-1.5 text-neutral-300">
+            <input
+              type="checkbox"
+              checked={autoEstimate}
+              onChange={(e) => setAutoEstimate(e.target.checked)}
+            />
+            Auto-estimate resale
+          </label>
+          <button className="btn-ghost" onClick={() => estimateResale(listings)}>
+            Re-estimate resale
+          </button>
           <span className="ml-auto text-neutral-500">
             {visible.length} of {listings.length} shown
           </span>
@@ -243,6 +300,7 @@ export default function DashboardPage() {
             listing={l}
             onChange={updateListing}
             onClassify={classify}
+            onEstimate={estimateOne}
             onAddToWatchlist={addToWatchlist}
           />
         ))}
